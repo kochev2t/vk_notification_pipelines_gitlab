@@ -33,9 +33,11 @@ else:
     masked_token = f"{VK_ACCESS_TOKEN[:4]}...{VK_ACCESS_TOKEN[-4:]}" if len(VK_ACCESS_TOKEN) > 8 else "***"
     logging.info(f"Токен загружен: {masked_token} (длина: {len(VK_ACCESS_TOKEN)} символов)")
 
+
+# 🔑 Укажите ID чата
 REPO_CHAT_MAP = {
-    'DEVELOP': ***,
-    'DEFAULT': ***,
+    'DEVELOP': 2000000006, 
+    'DEFAULT': 2000000011,
 }
 
 EMOJI = {
