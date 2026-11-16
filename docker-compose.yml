@@ -1,0 +1,7 @@
+services:
+  vk_notification:
+    build: .
+    container_name: vk_notification
+    restart: unless-stopped
+    ports:
+      - "2266:2266"
