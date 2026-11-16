@@ -1,77 +1,221 @@
-# Инструкция по созданию и запуску Docker-контейнера с Flask-приложением
+# VK Notification — запуск в Docker
 
----
-## 1. Запуск контейнера Ubuntu с пробросом порта 2266
+Проект запускается в Docker-контейнере с Flask-приложением.
+Порт `2266` внутри контейнера проброшен на порт `2266` хоста.
 
-```bash
-sudo docker run -d --name vk_notification --net bridge -p 2266:2266 -i -t ubuntu /bin/bash
+## Структура проекта
+
+```text
+vk_notification/
+├── Dockerfile
+├── docker-compose.yml
+├── app.py
+├── requirements.txt
+└── README.md
 ```
 
----
-## 2. Подключение к контейнеру
+## Требования
+
+На сервере должны быть установлены:
+
+- Docker
+- Docker Compose
+
+Проверить установку:
 
 ```bash
-sudo docker exec -it vk_notification /bin/bash
+docker --version
+docker compose version
 ```
 
----
-## 3. Обновление пакетов и установка необходимых инструментов
+## Подготовка файлов
+
+В папке проекта должны находиться:
+
+- `app.py` — код Flask-приложения
+- `requirements.txt` — список Python-зависимостей
+- `Dockerfile` — инструкция сборки образа
+- `docker-compose.yml` — конфигурация запуска контейнера
+
+Пример `requirements.txt`:
+
+```text
+Flask
+requests
+```
+
+## Сборка и запуск
+
+Перейдите в папку проекта:
 
 ```bash
-apt update
-apt install -y nano python3-pip python3.12-venv
+cd vk_notification
 ```
 
----
-## 4. Создание и активация виртуального окружения Python 3.12
+Соберите образ и запустите контейнер в фоновом режиме:
 
 ```bash
-python3.12 -m venv venv
-source venv/bin/activate
+sudo docker compose up -d --build
 ```
 
----
-## 5. Установка необходимых Python-библиотек в виртуальном окружении
+Команда:
+
+- соберёт Docker-образ;
+- создаст контейнер `vk_notification`;
+- запустит `app.py`;
+- оставит контейнер работать в фоне.
+
+`--build` заставляет Docker пересобрать образ перед запуском, а `-d` запускает контейнер в detached-режиме. [11]
+
+## Проверка работы
+
+Посмотреть список запущенных контейнеров:
 
 ```bash
-pip install Flask requests
+sudo docker compose ps
 ```
 
----
-## 6. Добавление вашего скрипта `app.py` в контейнер
+Посмотреть логи приложения:
 
 ```bash
-nano app.py
+sudo docker compose logs -f
 ```
 
-Вставьте содержимое файла [app.py](app.py)
+Чтобы выйти из просмотра логов, нажмите `Ctrl + C`.
+Это не остановит контейнер.
 
----
-## 7. Добавление файла `requirements.txt` в контейнер
+## Установка токена после запуска
+
+После запуска контейнера необходимо зайти внутрь него и задать переменную окружения с токеном VK:
 
 ```bash
-nano requirements.txt
+sudo docker compose exec vk_notification bash
 ```
-Вставьте содержимое файла [requirements.txt](requirements.txt)
 
----
-## 7. Запуск скрипта в контейнере
+Внутри контейнера выполните:
+
+```bash
+export VK_ACCESS_TOKEN='ваш_токен'
+```
+
+Замените `ваш_токен` на реальный access token VK.
+
+Проверить, что переменная установлена:
+
+```bash
+echo $VK_ACCESS_TOKEN
+```
+
+После этого запустите приложение:
 
 ```bash
 python3 app.py
 ```
 
-
-## 8. Остановка скрипта для корректировок
-
-Найдите PID процесса (в выводе искать по имени файла app.py): 
+Чтобы выйти из контейнера, выполните:
 
 ```bash
-ps aux | grep python
+exit
 ```
 
-Завершите процесс:
+## Доступ к приложению
+
+После успешного запуска приложение доступно по адресу:
+
+```text
+http://<IP_сервера>:2266
+```
+
+Например, на самом сервере:
+
+```text
+http://localhost:2266
+```
+
+Если приложение запущено на другом порту внутри `app.py`, отредактируйте проброс портов в `docker-compose.yml`.
+
+## Перезапуск после изменений
+
+Если вы изменили `app.py`, `requirements.txt` или `Dockerfile`, выполните:
 
 ```bash
-kill <PID>
+sudo docker compose up -d --build
+```
+
+Docker пересоберёт образ и перезапустит контейнер с обновлённым кодом.
+
+## Остановка
+
+Остановить и удалить контейнер:
+
+```bash
+sudo docker compose down
+```
+
+Остановить контейнер, но сохранить его:
+
+```bash
+sudo docker compose stop
+```
+
+Запустить ранее остановленный контейнер:
+
+```bash
+sudo docker compose start
+```
+
+Перезапустить контейнер:
+
+```bash
+sudo docker compose restart
+```
+
+## Вход в контейнер
+
+Если нужно зайти внутрь работающего контейнера:
+
+```bash
+sudo docker compose exec vk_notification bash
+```
+
+Выйти из контейнера:
+
+```bash
+exit
+```
+
+## Возможные проблемы
+
+### Порт 2266 уже занят
+
+Проверьте, что использует порт:
+
+```bash
+sudo lsof -i :2266
+```
+
+или:
+
+```bash
+sudo ss -ltnp | grep 2266
+```
+
+Если порт занят другим процессом, остановите его либо измените проброс порта в `docker-compose.yml`.
+
+### Приложение недоступно снаружи
+
+Убедитесь, что в `app.py` Flask запускается так:
+
+```python
+app.run(host="0.0.0.0", port=2266)
+```
+
+Адрес `127.0.0.1` внутри контейнера не позволит получить доступ к приложению с хоста или из сети.
+
+### Нужно полностью пересобрать образ
+
+```bash
+sudo docker compose down
+sudo docker compose build --no-cache
+sudo docker compose up -d
 ```
