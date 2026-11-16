@@ -15,12 +15,27 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 # 🔑 НАСТРОЙКИ
 # =============================================================================
 
-VK_ACCESS_TOKEN = '***'.strip()
-VK_API_VERSION = '5.199'
+VK_API_VERSION = os.getenv('VK_API_VERSION', '5.199').rstrip('/')
+raw_token = os.getenv('VK_ACCESS_TOKEN', '').strip()
+
+VK_ACCESS_TOKEN = ''.join(char for char in raw_token if ord(char) < 128)
+
+if raw_token != VK_ACCESS_TOKEN:
+    logging.warning("Токен содержал не-ASCII символы и был очищен!")
+    logging.warning(f"   Исходная длина: {len(raw_token)}, после очистки: {len(VK_ACCESS_TOKEN)}")
+
+if not VK_ACCESS_TOKEN:
+    logging.error("ВНИМАНИЕ: Переменная окружения VK_ACCESS_TOKEN не установлена!")
+    logging.error("Запустите скрипт с: export VK_ACCESS_TOKEN='ваш_токен'")
+elif len(VK_ACCESS_TOKEN) < 10:
+    logging.warning(f"Подозрительно короткий токен: {len(VK_ACCESS_TOKEN)} символов")
+else:
+    masked_token = f"{VK_ACCESS_TOKEN[:4]}...{VK_ACCESS_TOKEN[-4:]}" if len(VK_ACCESS_TOKEN) > 8 else "***"
+    logging.info(f"Токен загружен: {masked_token} (длина: {len(VK_ACCESS_TOKEN)} символов)")
 
 REPO_CHAT_MAP = {
-    'DEVELOP': 2000000006,
-    'DEFAULT': 2000000011,
+    'DEVELOP': ***,
+    'DEFAULT': ***,
 }
 
 EMOJI = {
